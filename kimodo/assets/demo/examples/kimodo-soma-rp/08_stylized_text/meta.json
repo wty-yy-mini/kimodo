@@ -1,7 +1,7 @@
 {
   "text": "A zombie with their left arm extended forward walks with an uneven gait at a slow pace.",
   "duration": 4.033333333333333,
-  "num_samples": 3,
+  "num_samples": 1,
   "seed": 42,
   "diffusion_steps": 100,
   "cfg": {
