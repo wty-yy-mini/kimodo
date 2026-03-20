@@ -3,19 +3,24 @@
 
 import argparse
 import os
+from pathlib import Path
+
+from kimodo.model import resolve_target
+from kimodo.tools import configure_torch_cpu_threads
+
+DEFAULT_TEXT = "A person walks and falls to the ground."
+DEFAULT_SERVER_NAME = "0.0.0.0"
+DEFAULT_SERVER_PORT = 9550
+DEFAULT_TMP_FOLDER = str(Path(__file__).resolve().parents[2] / "tmp" / "text_encoder")
+DEFAULT_GRADIO_TMP_DIR = str(Path(DEFAULT_TMP_FOLDER) / "gradio_cache")
+os.environ["GRADIO_TEMP_DIR"] = DEFAULT_GRADIO_TMP_DIR
 
 import gradio as gr
 import numpy as np
 
-from kimodo.model import resolve_target
-
 from .gradio_theme import get_gradio_theme
 
 os.environ["HF_ENABLE_PARALLEL_LOADING"] = "YES"
-DEFAULT_TEXT = "A person walks and falls to the ground."
-DEFAULT_SERVER_NAME = "0.0.0.0"
-DEFAULT_SERVER_PORT = 9550
-DEFAULT_TMP_FOLDER = "/tmp/text_encoder/"
 DEFAULT_TEXT_ENCODER = "llm2vec"
 TEXT_ENCODER_PRESETS = {
     "llm2vec": {
@@ -81,16 +86,21 @@ def parse_args():
 
 
 def main():
+    configure_torch_cpu_threads()
+
     args = parse_args()
     server_name = _get_env("GRADIO_SERVER_NAME", DEFAULT_SERVER_NAME)
     server_port = int(_get_env("GRADIO_SERVER_PORT", DEFAULT_SERVER_PORT))
     theme, css = get_gradio_theme()
     os.makedirs(args.tmp_folder, exist_ok=True)
+    gradio_tmp_dir = os.path.join(args.tmp_folder, "gradio_cache")
+    os.makedirs(gradio_tmp_dir, exist_ok=True)
+    os.environ["GRADIO_TEMP_DIR"] = gradio_tmp_dir
     text_encoder = _build_text_encoder(args.text_encoder)
     display_name = TEXT_ENCODER_PRESETS[args.text_encoder]["display_name"]
     demo_wrapper_fn = DemoWrapper(text_encoder, args.tmp_folder)
 
-    with gr.Blocks(title="Text encoder", css=css, theme=theme) as demo:
+    with gr.Blocks(title="Text encoder") as demo:
         gr.Markdown(f"# Text encoder: {display_name}")
         gr.Markdown("## Description")
         gr.Markdown("Get a embeddings from a text.")
@@ -155,7 +165,7 @@ def main():
         )
         clear.click(fn=clear_fn, inputs=None, outputs=outputs)
 
-    demo.launch(server_name=server_name, server_port=server_port)
+    demo.launch(server_name=server_name, server_port=server_port, theme=theme, css=css)
 
 
 if __name__ == "__main__":

@@ -16,6 +16,16 @@ import numpy as np
 import torch
 
 
+def configure_torch_cpu_threads() -> tuple[int, int]:
+    """Set conservative default Torch CPU thread limits for Kimodo."""
+
+    num_threads = 2
+    num_interop_threads = 2
+    torch.set_num_threads(num_threads)
+    torch.set_num_interop_threads(num_interop_threads)
+    return num_threads, num_interop_threads
+
+
 def validate(validator, save_args: bool = False, super_init: bool = False):
     """Create a decorator function for validating user inputs.
 

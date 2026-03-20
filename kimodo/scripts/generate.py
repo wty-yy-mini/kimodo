@@ -11,7 +11,7 @@ from kimodo import DEFAULT_MODEL, load_model
 from kimodo.constraints import load_constraints_lst
 from kimodo.meta import load_prompts_from_meta
 from kimodo.model.registry import get_model_info
-from kimodo.tools import load_json, seed_everything
+from kimodo.tools import configure_torch_cpu_threads, load_json, seed_everything
 
 
 def parse_args():
@@ -168,6 +168,8 @@ def get_generation_inputs(args, fps: float):
 
 
 def main():
+    configure_torch_cpu_threads()
+
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")
 

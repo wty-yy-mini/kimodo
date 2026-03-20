@@ -3,6 +3,7 @@
 """Remote text encoder API client (Gradio) for motion generation."""
 
 import logging
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -19,7 +20,9 @@ class TextEncoderAPI:
     """Text encoder API client for motion generation."""
 
     def __init__(self, url: str):
-        self.client = Client(url, verbose=False)
+        download_dir = Path(__file__).resolve().parents[2] / "tmp" / "gradio_client"
+        download_dir.mkdir(parents=True, exist_ok=True)
+        self.client = Client(url, verbose=False, download_files=str(download_dir))
         self.device = "cpu"
         self.dtype = torch.float
 

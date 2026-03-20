@@ -6,11 +6,14 @@ import argparse
 
 from kimodo.model import DEFAULT_MODEL
 from kimodo.model.registry import resolve_model_name
+from kimodo.tools import configure_torch_cpu_threads
 
 from .app import Demo
 
 
 def main() -> None:
+    configure_torch_cpu_threads()
+
     parser = argparse.ArgumentParser(description="Run the kimodo demo UI.")
     parser.add_argument(
         "--model",
