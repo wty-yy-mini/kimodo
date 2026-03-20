@@ -12,7 +12,7 @@ Kimodo is a **ki**nematic **mo**tion **d**iffusi**o**n model trained on a large-
 This repository provides:
 - **Inference**: code and CLI to generate motions on both human and robot skeletons
 - **Interactive Demo**: easily author motions with a timeline interface of text prompts and kinematic controls
--  _[Coming Soon]_ **Annotations**: [additional text descriptions](https://huggingface.co/datasets/nvidia/SEED-Timeline-Annotations) for the [BONES-SEED](https://huggingface.co/datasets/bones-studio/seed) dataset, including fine-grained temporal descriptions
+- **Annotations**: [additional text descriptions](https://huggingface.co/datasets/nvidia/SEED-Timeline-Annotations) for the [BONES-SEED](https://huggingface.co/datasets/bones-studio/seed) dataset, including fine-grained temporal descriptions
 - _[Coming Soon]_ **Benchmark**: test cases and evaluation code built on the [BONES-SEED](https://huggingface.co/datasets/bones-studio/seed) dataset to evaluate motion generation models based on text and constraint-following abilities
 
 <div align="center">
@@ -85,7 +85,7 @@ The web-based interactive demo provides an intuitive interface for generating mo
 
 **[CLI Documentation and Examples](https://research.nvidia.com/labs/sil/projects/kimodo/docs/user_guide/cli.html)**
 
-Motions can also be generated directly from the command line with the `kimodo_gen` command or by running `scripts/generate.py` directly.
+Motions can also be generated directly from the command line with the `kimodo_gen` command or by running `python -m kimodo.scripts.generate` directly.
 
 **Key Arguments:**
 - `prompt`: A single text description or sequence of texts for the desired motion (required)
@@ -94,6 +94,7 @@ Motions can also be generated directly from the command line with the `kimodo_ge
 - `--num_samples`: Number of motion variations to generate
 - `--constraints`: Constraint file to control the generated motion (e.g., saved from the web demo)
 - `--diffusion_steps`: Number of denoising steps
+- `--cfg_type` / `--cfg_weight`: Classifier-free guidance (`nocfg`, `regular` with one weight, or `separated` with two weights for text vs. constraints); see the [CLI docs](https://research.nvidia.com/labs/sil/projects/kimodo/docs/user_guide/cli.html#classifier-free-guidance-cfg)
 - `--no-postprocess`: Flag to disable foot skate and constraint cleanup post-processing
 - `--seed`: Random seed for reproducible results
 
@@ -162,7 +163,7 @@ python scripts/smplx_to_robot.py --smplx_file /path/to/saved/amass_format.npz --
 
 As detailed in the [tech report](https://research.nvidia.com/labs/sil/projects/kimodo/assets/kimodo_tech_report.pdf), Kimodo is trained using fine-grained temporal text annotations of mocap clips.
 While the full [Rigplay 1](https://bones.studio/datasets#rp01) dataset is proprietary, we have released the temporal segmentations for the public [BONES-SEED](https://huggingface.co/datasets/bones-studio/seed) subset.
-These annotations are already included in the BONES-SEED dataset, but the standalone labels and additional information about them will soon be [available on HuggingFace](https://huggingface.co/datasets/nvidia/SEED-Timeline-Annotations).
+These annotations are already included in the BONES-SEED dataset, but the standalone labels and additional information about them is [available on HuggingFace](https://huggingface.co/datasets/nvidia/SEED-Timeline-Annotations).
 
 
 ## Related Humanoid Work at NVIDIA
@@ -191,7 +192,7 @@ If you use this code in your research, please cite:
 
 ## License
 
-This codebase is licensed under [Apache-2.0](LICENSE). Note that model checkpoints are licensed separately as indicated on the HuggingFace download pages.
+This codebase is licensed under [Apache-2.0](LICENSE). Note that model checkpoints and data are licensed separately as indicated on the HuggingFace download pages.
 
 This project will download and install additional third-party open source software projects. Review the license terms of these open source projects before use.
 

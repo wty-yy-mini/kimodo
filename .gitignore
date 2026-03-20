@@ -2,6 +2,7 @@ tmp/
 
 # debugging files
 debug/
+SMPLX_NEUTRAL.npz
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
