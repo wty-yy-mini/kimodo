@@ -723,6 +723,8 @@ def create_gui(
                 return list(session.motions.values())[0]
 
             def _motion_to_numpy_dict(motion) -> dict[str, np.ndarray]:
+                from kimodo.exports.mujoco import MujocoQposConverter
+
                 joints_pos = motion.joints_pos.detach().cpu().numpy()
                 joints_rot = motion.joints_rot.detach().cpu().numpy()
                 joints_local_rot = motion.joints_local_rot.detach().cpu().numpy()
@@ -745,6 +747,20 @@ def create_gui(
                     "local_rot_mats": joints_local_rot,
                     "root_positions": joints_pos[:, motion.skeleton.root_idx, :],
                 }
+                if "g1" in motion.skeleton.name.lower():
+                    converter = MujocoQposConverter(motion.skeleton)
+                    qpos = converter.dict_to_qpos(
+                        {
+                            "local_rot_mats": motion_data["local_rot_mats"][None, ...],
+                            "root_positions": motion_data["root_positions"][None, ...],
+                        },
+                        device=demo.device,
+                        numpy=True,
+                    )[0]
+                    root_trans = qpos[:, :3]
+                    motion_data["root_trans_offset"] = root_trans - root_trans[[0], :]
+                    motion_data["root_rot"] = qpos[:, 3:7]
+                    motion_data["dof"] = qpos[:, 7:]
                 if motion.foot_contacts is not None:
                     foot_contacts = motion.foot_contacts.detach().cpu().numpy()
                     if foot_contacts.ndim != 2:

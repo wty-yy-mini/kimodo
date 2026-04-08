@@ -16,6 +16,49 @@ from kimodo.model.registry import get_model_info
 from kimodo.tools import configure_torch_cpu_threads, load_json, seed_everything
 
 
+def add_g1_dof_export_keys(output: dict, model) -> dict:
+    """Augment G1 outputs with root_trans_offset / dof / root_rot for NPZ export."""
+    skeleton_name = getattr(getattr(model, "skeleton", None), "name", "").lower()
+    if "g1" not in skeleton_name:
+        return output
+    if "local_rot_mats" not in output:
+        return output
+
+    root_positions = output.get("root_positions")
+    if root_positions is None:
+        posed_joints = output.get("posed_joints")
+        if posed_joints is None:
+            return output
+        root_idx = model.skeleton.root_idx
+        if posed_joints.ndim == 4:
+            root_positions = posed_joints[:, :, root_idx, :]
+        elif posed_joints.ndim == 3:
+            root_positions = posed_joints[:, root_idx, :]
+        else:
+            return output
+
+    from kimodo.exports.mujoco import MujocoQposConverter
+
+    converter = MujocoQposConverter(model.skeleton)
+    qpos = converter.dict_to_qpos(
+        {"local_rot_mats": output["local_rot_mats"], "root_positions": root_positions},
+        device=str(model.device),
+        numpy=True,
+    )
+    if qpos.ndim == 3:
+        root_trans = qpos[:, :, :3]
+        output["root_trans_offset"] = root_trans - root_trans[:, [0], :]
+    elif qpos.ndim == 2:
+        root_trans = qpos[:, :3]
+        output["root_trans_offset"] = root_trans - root_trans[[0], :]
+    else:
+        return output
+
+    output["root_rot"] = qpos[..., 3:7]
+    output["dof"] = qpos[..., 7:]
+    return output
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Cmd line API for generation motions with kimodo")
     parser.add_argument(
@@ -323,6 +366,7 @@ def main():
         return_numpy=True,
         **cfg_kwargs,
     )
+    output = add_g1_dof_export_keys(output, model)
 
     n_samples = int(output["posed_joints"].shape[0])
     # Parse the output stem once; all formats (NPZ, AMASS NPZ, CSV, BVH) use this base name.
