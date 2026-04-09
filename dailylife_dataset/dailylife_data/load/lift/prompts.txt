@@ -1,0 +1,10 @@
+lift an object with both hands
+lift a huge object with both hands
+lift a tiny object with both hands
+lift an object with the left hand
+lift an object with the right hand
+lift an object high above the head
+lift an object to chest level
+lift an object from a high position with both hands
+lift an object and move it to the left
+lift an object and move it to the right

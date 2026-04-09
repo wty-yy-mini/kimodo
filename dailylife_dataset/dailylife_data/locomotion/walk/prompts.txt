@@ -1,0 +1,16 @@
+walk forward
+walk backward
+walk sideways to the left
+walk sideways to the right
+walk diagonally forward and to the left
+walk diagonally forward and to the right
+walk diagonally backward and to the left
+walk diagonally backward and to the right
+walk forward while curving to the left
+walk forward while curving to the right
+walk backward while curving to the left
+walk backward while curving to the right
+walk forward slowly
+walk forward quickly
+walk backward slowly
+walk backward quickly

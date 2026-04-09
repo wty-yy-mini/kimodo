@@ -1,0 +1,5 @@
+throw an object forward with the right hand
+throw an object forward with the left hand
+throw an object forward with both hands
+throw an object straight up into the air
+toss an object up and catch it

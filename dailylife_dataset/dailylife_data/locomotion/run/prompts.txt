@@ -1,0 +1,15 @@
+run forward
+run backward
+run sideways to the left
+run sideways to the right
+run diagonally forward and to the left
+run diagonally forward and to the right
+run diagonally backward and to the left
+run diagonally backward and to the right
+run forward while curving to the left
+run forward while curving to the right
+run forward slowly
+run forward quickly
+run backward slowly
+run backward quickly
+run forward with high knees
