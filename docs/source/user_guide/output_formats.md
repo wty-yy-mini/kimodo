@@ -50,6 +50,16 @@ data to a CSV file. Each row corresponds to a pose in the motion and contains 36
 
 The CSV uses the MuJoCo coordinate system (z-up, +x forward). If multiple samples are generated, files are saved with suffixes like `_00`, `_01`, etc.
 
+### Tiny NPZ for Kimodo-G1 (`--tiny-npz`)
+
+When using `Kimodo-G1` models, you can add `--tiny-npz` to export a minimal NPZ payload.
+The tiny NPZ includes only:
+
+- `root_positions`: Root translation `[T, 3]` (MuJoCo coordinates, z-up)
+- `root_rot`: Root rotation quaternion `[T, 4]`
+- `dof`: 29 joint 1-DoF values `[T, 29]`
+- `fps`: Frame rate
+
 
 ## AMASS NPZ Format for Kimodo-SMPLX
 

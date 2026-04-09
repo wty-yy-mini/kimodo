@@ -9,6 +9,7 @@ from typing import Optional
 
 from kimodo.constraints import load_constraints_lst, save_constraints_lst
 from kimodo.exports.bvh import motion_to_bvh_bytes
+from kimodo.exports.g1_npz_export import prepare_npz_export_dict
 from kimodo.tools import to_torch
 from kimodo.viz import viser_utils
 from kimodo.viz.viser_utils import GuiElements
@@ -723,8 +724,6 @@ def create_gui(
                 return list(session.motions.values())[0]
 
             def _motion_to_numpy_dict(motion) -> dict[str, np.ndarray]:
-                from kimodo.exports.mujoco import MujocoQposConverter
-
                 joints_pos = motion.joints_pos.detach().cpu().numpy()
                 joints_rot = motion.joints_rot.detach().cpu().numpy()
                 joints_local_rot = motion.joints_local_rot.detach().cpu().numpy()
@@ -747,20 +746,6 @@ def create_gui(
                     "local_rot_mats": joints_local_rot,
                     "root_positions": joints_pos[:, motion.skeleton.root_idx, :],
                 }
-                if "g1" in motion.skeleton.name.lower():
-                    converter = MujocoQposConverter(motion.skeleton)
-                    qpos = converter.dict_to_qpos(
-                        {
-                            "local_rot_mats": motion_data["local_rot_mats"][None, ...],
-                            "root_positions": motion_data["root_positions"][None, ...],
-                        },
-                        device=demo.device,
-                        numpy=True,
-                    )[0]
-                    root_trans = qpos[:, :3]
-                    motion_data["root_trans_offset"] = root_trans - root_trans[[0], :]
-                    motion_data["root_rot"] = qpos[:, 3:7]
-                    motion_data["dof"] = qpos[:, 7:]
                 if motion.foot_contacts is not None:
                     foot_contacts = motion.foot_contacts.detach().cpu().numpy()
                     if foot_contacts.ndim != 2:
@@ -774,8 +759,14 @@ def create_gui(
                 session = demo.client_sessions[client.client_id]
                 # only save the first motion
                 motion = _get_primary_motion(session)
-                motion_data = _motion_to_numpy_dict(motion)
-                motion_data.pop("root_positions")
+                motion_data = prepare_npz_export_dict(
+                    _motion_to_numpy_dict(motion),
+                    motion.skeleton,
+                    fps=float(session.model_fps),
+                    device=str(demo.device),
+                    root_quat_w_first=True,
+                    g1_as_mujoco_zup=True,
+                )
                 np.savez(save_path, **motion_data)
 
             @gui_save_motion_button.on_click
@@ -1259,11 +1250,17 @@ def create_gui(
                     _viser_messages.RunJavascriptMessage(source=js)
                 )
 
-            def _motion_to_npz_bytes(motion) -> bytes:
+            def _motion_to_npz_bytes(motion, session: ClientSession) -> bytes:
                 import io
 
-                motion_data = _motion_to_numpy_dict(motion)
-                motion_data.pop("root_positions")
+                motion_data = prepare_npz_export_dict(
+                    _motion_to_numpy_dict(motion),
+                    motion.skeleton,
+                    fps=float(session.model_fps),
+                    device=str(demo.device),
+                    root_quat_w_first=True,
+                    g1_as_mujoco_zup=True,
+                )
                 buf = io.BytesIO()
                 np.savez(buf, **motion_data)
                 return buf.getvalue()
@@ -1536,7 +1533,7 @@ def create_gui(
                     else:
                         # Default to NPZ (most common and matches existing save/load).
                         filename = _coerce_download_filename(raw_name, ext=".npz")
-                        payload = _motion_to_npz_bytes(motion)
+                        payload = _motion_to_npz_bytes(motion, session)
                         mime = "application/octet-stream"
 
                     _download_bytes_to_browser(
