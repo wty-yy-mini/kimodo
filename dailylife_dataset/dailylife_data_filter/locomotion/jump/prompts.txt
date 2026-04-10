@@ -1,0 +1,13 @@
+jump forward
+jump backward
+jump sideways to the left
+jump sideways to the right
+jump diagonally forward and to the left
+jump diagonally forward and to the right
+jump diagonally backward and to the left
+jump diagonally backward and to the right
+jump in place
+jump high in place
+jump while turning to the left
+jump while turning to the right
+jump in place with high knees

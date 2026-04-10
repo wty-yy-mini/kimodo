@@ -1,4 +1,5 @@
-"""
+"""DailyLife dataset generation entrypoint.
+
 Usage:
 1) Generate all default keywords:
    python dailylife_dataset/generate_data.py
@@ -6,8 +7,11 @@ Usage:
 2) Generate only selected keywords:
    python dailylife_dataset/generate_data.py --keywords walk run throw
 
-3) Regenerate even if same prompt-id npz exists:
-   python dailylife_dataset/generate_data.py --keywords walk --force
+3) Generate only one prompt line (id start from 1):
+   python dailylife_dataset/generate_data.py --keywords jump --prompt-id 3
+
+4) Regenerate even if same prompt-id npz exists:
+   python dailylife_dataset/generate_data.py --keywords walk --overwrite
 """
 
 from __future__ import annotations
@@ -34,6 +38,11 @@ from kimodo.tools import seed_everything
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments for dataset generation.
+
+    Returns:
+        Parsed command-line namespace.
+    """
     parser = argparse.ArgumentParser(
         description=(
             "Generate DailyLife G1 dataset from prompts.txt files. "
@@ -47,14 +56,31 @@ def parse_args() -> argparse.Namespace:
         help=f"Keywords to generate. Use 'all' for all configured keywords. Default: {cfg.DEFAULT_KEYWORDS}",
     )
     parser.add_argument(
-        "--force",
+        "--prompt-id",
+        type=int,
+        default=None,
+        help="Generate only the specified non-empty prompt line id (Start from 1). Default: generate all prompts.",
+    )
+    parser.add_argument(
+        "--overwrite",
         action="store_true",
         help="Regenerate even if an existing <prompt_id>_*.npz already exists.",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.prompt_id is not None and args.prompt_id <= 0:
+        parser.error("--prompt-id must be a positive line id.")
+    return args
 
 
 def resolve_keywords(keywords: Iterable[str]) -> list[str]:
+    """Resolve requested keywords against configured prompt groups.
+
+    Args:
+        keywords: Raw keyword values from command-line arguments.
+
+    Returns:
+        Normalized keyword list to generate.
+    """
     all_keywords = list(cfg.KEYWORD_TO_PROMPTS.keys())
     normalized = [k.strip().lower() for k in keywords if k and k.strip()]
     if not normalized or normalized == ["all"]:
@@ -67,6 +93,14 @@ def resolve_keywords(keywords: Iterable[str]) -> list[str]:
 
 
 def load_prompts_with_line_id(path: Path) -> list[tuple[int, str]]:
+    """Load non-empty prompts while preserving their source line ids.
+
+    Args:
+        path: Path to the prompts.txt file.
+
+    Returns:
+        List of ``(line_id, prompt)`` pairs for non-empty lines.
+    """
     prompts: list[tuple[int, str]] = []
     lines = path.read_text(encoding="utf-8").splitlines()
     for line_id, raw in enumerate(lines, start=1):
@@ -77,7 +111,31 @@ def load_prompts_with_line_id(path: Path) -> list[tuple[int, str]]:
 
 
 def has_existing_prompt_id_npz(folder: Path, prompt_id: int) -> bool:
+    """Check whether output files already exist for a prompt line id.
+
+    Args:
+        folder: Output directory to inspect.
+        prompt_id: Prompt line id encoded in output filenames.
+
+    Returns:
+        ``True`` when matching ``<prompt_id>_*.npz`` files already exist.
+    """
     return any(folder.glob(f"{prompt_id}_*.npz"))
+
+
+def filter_prompts_by_id(prompts: list[tuple[int, str]], prompt_id: int | None) -> list[tuple[int, str]]:
+    """Filter prompts to a single requested line id when provided.
+
+    Args:
+        prompts: Loaded ``(line_id, prompt)`` pairs.
+        prompt_id: Requested non-empty prompt line id, or ``None`` for all prompts.
+
+    Returns:
+        Filtered prompt list matching the requested line id.
+    """
+    if prompt_id is None:
+        return prompts
+    return [(line_id, prompt) for line_id, prompt in prompts if line_id == prompt_id]
 
 
 def save_prompt_samples(
@@ -87,6 +145,15 @@ def save_prompt_samples(
     out_dir: Path,
     num_samples: int,
 ) -> None:
+    """Save one generated prompt result into per-sample NPZ files.
+
+    Args:
+        output_for_npz: Export-ready batched arrays keyed by NPZ field name.
+        prompt: Prompt text used for generation.
+        prompt_id: Prompt line id encoded into output filenames.
+        out_dir: Directory where NPZ files will be written.
+        num_samples: Number of samples to save from the batched output.
+    """
     for sample_idx in range(num_samples):
         sample_id = sample_idx + 1
         filename = cfg.NPZ_NAME_PATTERN.format(prompt_id=prompt_id, sample_id=sample_id)
@@ -100,6 +167,11 @@ def save_prompt_samples(
 
 
 def main() -> None:
+    """Run DailyLife prompt generation for the requested keyword groups.
+
+    The generation loop can optionally restrict work to one non-empty prompt
+    line id across the selected keywords.
+    """
     args = parse_args()
     keywords = resolve_keywords(args.keywords)
 
@@ -118,13 +190,14 @@ def main() -> None:
 
     print(
         f"Loaded model {resolved_model}; seed={cfg.SEED}, steps={cfg.DENOISING_STEPS}, "
-        f"num_samples={cfg.NUM_SAMPLES_PER_PROMPT}, duration={cfg.DURATION_SECONDS}s"
+        f"num_samples={cfg.NUM_SAMPLES_PER_PROMPT}, default_duration={cfg.DURATION_SECONDS_DEFAULT}s"
     )
 
     seed_everything(cfg.SEED)
-    num_frames = int(float(cfg.DURATION_SECONDS) * float(model.fps))
 
     for keyword in keywords:
+        duration_seconds = cfg.get_duration_seconds(keyword)
+        num_frames = int(float(duration_seconds) * float(model.fps))
         prompts_path = cfg.KEYWORD_TO_PROMPTS[keyword]
         if not prompts_path.exists():
             print(f"[SKIP] Missing prompts file for '{keyword}': {prompts_path}")
@@ -132,10 +205,18 @@ def main() -> None:
 
         out_dir = prompts_path.parent
         prompts = load_prompts_with_line_id(prompts_path)
-        print(f"\n[{keyword}] prompts={len(prompts)} -> output dir: {out_dir}")
+        prompts = filter_prompts_by_id(prompts, args.prompt_id)
+        print(
+            f"\n[{keyword}] prompts={len(prompts)}, duration={duration_seconds}s, "
+            f"num_frames={num_frames} -> output dir: {out_dir}"
+        )
+
+        if args.prompt_id is not None and not prompts:
+            print(f"  [SKIP] prompt line {args.prompt_id}: not found in {prompts_path}")
+            continue
 
         for prompt_id, prompt in prompts:
-            if (not args.force) and has_existing_prompt_id_npz(out_dir, prompt_id):
+            if (not args.overwrite) and has_existing_prompt_id_npz(out_dir, prompt_id):
                 print(f"  [SKIP] prompt line {prompt_id}: existing '{prompt_id}_*.npz' found")
                 continue
 

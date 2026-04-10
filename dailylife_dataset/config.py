@@ -9,7 +9,11 @@ MODEL_NAME = "Kimodo-G1-RP-v1"
 SEED = 1
 DENOISING_STEPS = 1000
 NUM_SAMPLES_PER_PROMPT = 5
-DURATION_SECONDS = 5.0
+DURATION_SECONDS_DEFAULT = 3.0
+DURATION_SECONDS_BY_KEYWORD = {
+    "walk": 5.0,
+    "run": 5.0,
+}
 NUM_TRANSITION_FRAMES = 5
 
 # Dataset coverage by keyword (explicitly listed here for easy management).
@@ -47,3 +51,8 @@ DEFAULT_KEYWORDS = [
 
 # Output file name in each prompt folder: "{prompt_line}_{sample_id}.npz"
 NPZ_NAME_PATTERN = "{prompt_id}_{sample_id}.npz"
+
+
+def get_duration_seconds(keyword: str) -> float:
+    normalized = keyword.strip().lower()
+    return float(DURATION_SECONDS_BY_KEYWORD.get(normalized, DURATION_SECONDS_DEFAULT))

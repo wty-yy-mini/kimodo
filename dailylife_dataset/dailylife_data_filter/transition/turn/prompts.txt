@@ -1,0 +1,8 @@
+turn left
+turn right
+turn left quickly
+turn right quickly
+turn around from left
+turn around from left quickly
+turn around from right
+turn around from right quickly

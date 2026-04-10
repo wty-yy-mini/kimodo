@@ -75,5 +75,5 @@ python dailylife_dataset/generate_data.py
 python dailylife_dataset/generate_data.py --keywords walk run throw
 
 # Force regeneration even if prompt-id files already exist
-python dailylife_dataset/generate_data.py --keywords walk --force
+python dailylife_dataset/generate_data.py --keywords walk --overwrite
 ```
