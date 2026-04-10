@@ -77,3 +77,24 @@ python dailylife_dataset/generate_data.py --keywords walk run throw
 # Force regeneration even if prompt-id files already exist
 python dailylife_dataset/generate_data.py --keywords walk --overwrite
 ```
+
+## Pack filtered NPZ files to one dataset file
+
+Use `dailylife_dataset/pack_npz2pkl.py` to pack `dailylife_data_filter/<type>/<keyword>/*.npz`
+into a single file where each entry key is `type_keyword_{name}`.
+
+Examples:
+
+```bash
+# Default output mode: joblib (saved as .pkl extension)
+python dailylife_dataset/pack_npz2pkl.py
+
+# Custom output path
+python dailylife_dataset/pack_npz2pkl.py --output dailylife_dataset/dailylife_data_filter.pkl
+```
+
+# Version
+## v1
+Initial version [dailylife_data_v1.pkl](./data/dailylife_data_v1.pkl)
+
+Contains 11310 frames, 6min17sec, 105 trajectories, 10 keywords.
